@@ -1,0 +1,13 @@
+{
+    "name": "sgtpepper9907/sugar-pack",
+    "description": "CLI tool for packaging SugarCRM module loadable packages",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "David Angulo",
+            "email": "david.angulo.arias@gmail.com"
+        }
+    ],
+    "require": {}
+}

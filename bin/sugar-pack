@@ -8,7 +8,6 @@ $file = null;
 foreach ($possibleFiles as $possibleFile) {
     if (file_exists($possibleFile)) {
         $file = $possibleFile;
-
         break;
     }
 }
@@ -18,7 +17,6 @@ if (null === $file) {
 }
 
 require_once $file;
-
 unset($possibleFiles, $possibleFile, $file);
 
 use SugarPack\Commands\PackCommand;
@@ -39,11 +37,10 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
     if (0 === error_reporting()) {
         return false;
     }
-
     throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
 });
 
-$app = new Application('sugar-pack', '1.0.0');
+$app = new Application('sugar-pack', '1.0.2');
 
 $app->addCommands([
     new PackCommand()

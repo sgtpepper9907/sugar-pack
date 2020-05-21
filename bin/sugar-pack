@@ -1,0 +1,35 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use SugarPack\Commands\PackCommand;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Yaml\Yaml;
+
+try {
+    $GLOBALS['config'] = Yaml::parseFile(dirname($argv[0]) . '/config.yaml');
+} catch (\Exception $e) {
+    $GLOBALS['config'] = [
+        'output_dir' => '~/Downloads',
+        'package_naming' => 'Versioned'
+    ];
+}
+
+set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
+    // error was suppressed with the @-operator
+    if (0 === error_reporting()) {
+        return false;
+    }
+
+    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
+
+$app = new Application('sugar-pack', '1.0.0');
+
+$app->addCommands([
+    new PackCommand()
+]);
+
+$app->setDefaultCommand('pack', false);
+$app->run();

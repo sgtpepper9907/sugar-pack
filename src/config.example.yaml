@@ -1,0 +1,6 @@
+# Default output directory for packages
+output_dir: ~/Downloads
+
+# Naming strategy for the generated ZIP files
+# valid values are GUID and Versioned
+package_naming: Versioned

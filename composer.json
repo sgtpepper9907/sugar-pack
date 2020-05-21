@@ -19,5 +19,13 @@
             "SugarPack\\" : "src/"
         }
     },
-    "bin": ["bin/sugar-pack"]
+    "bin": ["bin/sugar-pack"],
+    "require-dev": {
+        "phpunit/phpunit": "^9"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "SugarPack\\Tests\\": "tests/"
+        }
+    }
 }

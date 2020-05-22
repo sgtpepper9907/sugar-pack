@@ -19,6 +19,8 @@ if (null === $file) {
 require_once $file;
 unset($possibleFiles, $possibleFile, $file);
 
+use Phpfastcache\CacheManager;
+use Phpfastcache\Config\Config;
 use SugarPack\Commands\PackCommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Yaml\Yaml;
@@ -39,6 +41,10 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
     }
     throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
 });
+
+CacheManager::setDefaultConfig(new Config([
+    'path' => sys_get_temp_dir()
+]));
 
 $app = new Application('sugar-pack', '1.0.2');
 

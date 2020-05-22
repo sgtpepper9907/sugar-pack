@@ -34,6 +34,19 @@ class Manifest
         return $manifest['version'];
     }
 
+    public function getName()
+    {
+        $this->read();
+        eval($this->contents);
+
+        return $manifest['name'];
+    }
+
+    public static function isValidUpgradeType(string $type) : bool
+    {
+        return in_array($type, ['PATCH', 'MINOR', 'MAJOR']);
+    }
+
     /**
      * Upgrades the version of the manifest
      *
@@ -48,6 +61,8 @@ class Manifest
 
         $subVersions = explode('.', $currentVersion);
         $subVersionsCount = count($subVersions);
+        
+        $type = static::isValidUpgradeType($type) ? $type : 'PATCH';
 
         switch ($type) {
             case 'PATCH':

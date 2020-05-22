@@ -62,32 +62,22 @@ class PackCommand extends Command
             $upgradeType = $input->getOption('upgrade-type');
 
             $path = getcwd() . '/' . rtrim($input->getArgument('package'), DIRECTORY_SEPARATOR);
-            $this->packageName = basename($path);
 
-            $pacakge = new Package($path);
-
-            if (!$pacakge->isValid()) {
-                $output->writeln("<error>{$this->packageName} is not a valid SugarCRM© Module Loadable Package </>");
-                return 1;
-            }
-
-            $manifest = new Manifest($path . '/manifest.php');
+            $package = new Package($path);
 
             if (!$skipUpgrade) {
-                if (!$this->isValidUpgradeType($upgradeType)) {
+                if (!Manifest::isValidUpgradeType($upgradeType)) {
                     $output->writeln('<comment>Invalid upgrade type, Defaulting to PATCH.</>');
-                    $upgradeType = 'PATCH';
                 }
 
-                $manifest->upgrade($upgradeType);
+                $package->manifest->upgrade($upgradeType);
             } else {
                 $output->writeln('Skipping manifest upgrade...');
             }
 
-            $this->version = $manifest->getVersion();
-            $outputFile = $this->buildOutputFileName($input);
+            $outputFile = $this->buildOutputFileName($package->manifest, $input);
 
-            if (!$pacakge->compress($outputFile)) {
+            if (!$package->compress($outputFile)) {
                 $output->writeln('<error>Failed to compress the package</>');
             }
 
@@ -99,12 +89,7 @@ class PackCommand extends Command
         }
     }
 
-    private function isValidUpgradeType($type): bool
-    {
-        return in_array($type, ['PATCH', 'MINOR', 'MAJOR']);
-    }
-
-    private function buildOutputFileName(InputInterface $input) : string
+    private function buildOutputFileName(Manifest $manifest, InputInterface $input) : string
     {
         $overwriteName = $input->getOption('output');
         $overwriteDir = $input->getOption('dir');
@@ -121,7 +106,7 @@ class PackCommand extends Command
                 break;
             case 'Versioned':
             default:
-                $fileName = $this->packageName . '_v' . $this->version;
+                $fileName = $manifest->getName() . '_v' . $manifest->getVersion();
                 break;
         }
 

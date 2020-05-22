@@ -2,6 +2,7 @@
 
 namespace SugarPack\Tests\Utils;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use SugarPack\Utils\Package;
 use ZipArchive;
@@ -12,25 +13,12 @@ class PackageTest extends TestCase
     private static $ZIP_PATH = __DIR__ . '/test.zip';
 
     /** @test */
-    public function it_validates_package_by_looking_for_a_manifest()
-    {
-        $package = new Package(self::$PACKAGE_PATH);
-        
-        $expected = true;
-        $actual = $package->isValid();
-
-        $this->assertEquals($actual, $expected);
-    }
-
-    /** @test */
     public function it_determines_a_package_as_invalid_if_no_manifest_is_found()
     {
-        $package = new Package('./');
-        
-        $expected = false;
-        $actual = $package->isValid();
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The specified path does not contain a valid SugarCRM© Module Loadable Package.');
 
-        $this->assertEquals($actual, $expected);
+        new Package('./');
     }
 
     /** @test */

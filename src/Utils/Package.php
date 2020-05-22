@@ -2,6 +2,7 @@
 
 namespace SugarPack\Utils;
 
+use InvalidArgumentException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ZipArchive;
@@ -16,6 +17,13 @@ class Package
     private $path = null;
 
     /**
+     * The package's manifest
+     *
+     * @var Manifest
+     */
+    public $manifest = null;
+
+    /**
      * Files allowed by SugarCrm Module loader
      *
      * @var array
@@ -28,9 +36,14 @@ class Package
     public function __construct(string $path)
     {
         $this->path = $path;
+        if (!$this->isValid()) {
+            throw new InvalidArgumentException('The specified path does not contain a valid SugarCRM© Module Loadable Package.');
+        }
+
+        $this->manifest = new Manifest($this->path . '/manifest.php');
     }
 
-    public function isValid() : bool
+    private function isValid() : bool
     {
         if (!is_dir($this->path)) {
             return false;
@@ -57,8 +70,6 @@ class Package
             new RecursiveDirectoryIterator($this->path),
             RecursiveIteratorIterator::LEAVES_ONLY
         );
-
-
 
         foreach ($files as $file) {
             // Skip directories (they would be added automatically)

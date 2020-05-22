@@ -4,6 +4,7 @@ namespace SugarPack\Tests\Utils;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use SugarPack\Utils\Manifest;
 use SugarPack\Utils\Package;
 use ZipArchive;
 
@@ -35,6 +36,14 @@ class PackageTest extends TestCase
         $zip->close();
 
         $this->assertEquals($actualFilesCount, $expectedFilesCount);
+    }
+
+    /** @test */
+    public function it_loads_the_package_manifest()
+    {
+        $package = new Package(self::$PACKAGE_PATH);
+
+        $this->assertInstanceOf(Manifest::class, $package->manifest);
     }
 
     protected function tearDown(): void

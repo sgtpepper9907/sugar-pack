@@ -21,6 +21,28 @@ class ManifestTest extends TestCase
     }
 
     /** @test */
+    public function it_reads_the_name_of_a_manifest_file()
+    {
+        $manifest = new Manifest(self::$MANIFEST_PATH);
+        $expectedName = 'TestPackage';
+        $actualName = $manifest->getName();
+
+        $this->assertEquals($actualName, $expectedName);
+    }
+    
+    /** @test */
+    public function it_defaults_to_a_patch_upgrade_when_no_valid_upgrade_type_is_provided()
+    {
+        $manifest = new Manifest(self::$MANIFEST_PATH);
+        $manifest->upgrade('Not valid');
+
+        $expectedVersion = '1.0.1';
+        $actualVersion = $manifest->getVersion();
+
+        $this->assertEquals($actualVersion, $expectedVersion);
+    }
+
+    /** @test */
     public function it_applies_a_patch_upgrade_to_the_manifest_version()
     {
         $manifest = new Manifest(self::$MANIFEST_PATH);

@@ -47,7 +47,7 @@ CacheManager::setDefaultConfig(new Config([
     'path' => sys_get_temp_dir()
 ]));
 
-$app = new Application('sugar-pack', '1.0.2');
+$app = new Application('sugar-pack', '1.1.0');
 
 $app->addCommands([
     new PackCommand(),

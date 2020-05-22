@@ -22,6 +22,7 @@ unset($possibleFiles, $possibleFile, $file);
 use Phpfastcache\CacheManager;
 use Phpfastcache\Config\Config;
 use SugarPack\Commands\PackCommand;
+use SugarPack\Commands\PublishCommand;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Yaml\Yaml;
 
@@ -49,7 +50,8 @@ CacheManager::setDefaultConfig(new Config([
 $app = new Application('sugar-pack', '1.0.2');
 
 $app->addCommands([
-    new PackCommand()
+    new PackCommand(),
+    new PublishCommand()
 ]);
 
 $app->run();

@@ -12,7 +12,9 @@
     "require": {
         "symfony/console": "^5.0",
         "symfony/yaml": "^5.0",
-        "ramsey/uuid": "^4.0"
+        "ramsey/uuid": "^4.0",
+        "guzzlehttp/guzzle": "~6.0",
+        "phpfastcache/phpfastcache": "^8.0"
     },
     "autoload": {
         "psr-4": {

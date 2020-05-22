@@ -78,6 +78,11 @@ class ManifestTest extends TestCase
         $this->assertEquals($actualVersion, $expectedVersion);
     }
 
+    protected function setUp(): void
+    {
+        $this->restoreManifest();
+    }
+
     protected function tearDown(): void
     {
         $this->restoreManifest();

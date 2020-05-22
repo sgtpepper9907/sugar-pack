@@ -61,7 +61,7 @@ class PackCommand extends Command
             $skipUpgrade = $input->getOption('skip-upgrade');
             $upgradeType = $input->getOption('upgrade-type');
 
-            $path = getcwd() . '/' . rtrim($input->getArgument('package'), DIRECTORY_SEPARATOR);
+            $path = getcwd() . DIRECTORY_SEPARATOR . rtrim($input->getArgument('package'), DIRECTORY_SEPARATOR);
 
             $package = new Package($path);
 

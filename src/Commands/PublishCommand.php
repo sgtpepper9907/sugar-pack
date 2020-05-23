@@ -5,7 +5,6 @@ namespace SugarPack\Commands;
 use SugarPack\Http\SugarCient;
 use SugarPack\Utils\Manifest;
 use SugarPack\Utils\Package;
-use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -95,9 +94,6 @@ class PublishCommand extends Command
                 return 1;
             }
 
-            ProgressBar::setFormatDefinition('message', '%current%/%max% -- %message%');
-            ProgressBar::setFormatDefinition('upload', '%message% %bar% %percent%%  %current%/%max% bytes');
-
             if (!$skipUpgrade) {
                 if (!Manifest::isValidUpgradeType($upgradeType)) {
                     $output->writeln('<comment>Invalid upgrade type, Defaulting to PATCH.</>');
@@ -111,17 +107,14 @@ class PublishCommand extends Command
             $packageName = $package->manifest->getName();
             $packageVersion = $package->manifest->getVersion();
             
-            
-            $progressBar = new ProgressBar($output);
-            $progressBar->setFormat('message');
-
-
-            $progressBar->setMessage("Verifying if the package is already installed...");
-            $progressBar->start();
-            $oldInstalledPackage = $sugarClient->getInstalledPackage($packageName);
-            $progressBar->finish();
-            $progressBar->clear();
-
+            $oldInstalledPackage = null;
+            $this->showTaskProgress(
+                $output, 
+                'Verifying if the package is already installed...', 
+                function() use ($sugarClient, $packageName, &$oldInstalledPackage) {
+                    $oldInstalledPackage = $sugarClient->getInstalledPackage($packageName);
+                }
+            );
 
             if ($oldInstalledPackage) {
                 $output->writeln("<comment>Found package installed with version: <options=bold>{$oldInstalledPackage->version}</></>");
@@ -139,65 +132,67 @@ class PublishCommand extends Command
                     }
                 }
 
-                
-                $progressBar->setMessage("Uninstalling package...");
-                $progressBar->start(1);
-                
-                $sugarClient->uninstallPackageById($oldInstalledPackage->id);
-                $sugarClient->deleteStagedPackage($packageName);
-                
-                $progressBar->finish();
-                $progressBar->clear();
+                $this->showTaskProgress(
+                    $output,
+                    'Uninstalling package...',
+                    function() use ($sugarClient, $packageName, $oldInstalledPackage) {
+                        $sugarClient->uninstallPackageById($oldInstalledPackage->id);
+                        $sugarClient->deleteStagedPackage($packageName);
+                    }
+                );
             }
 
             $oldPackageStaged = $sugarClient->getStagedPackage($packageName);
             if ($oldPackageStaged) {
                 $output->writeln("<comment>Found staged package with version: <options=bold>{$oldPackageStaged->version}</></>");
 
-                $progressBar->setMessage("Deleting staged package...");
-                $progressBar->start(1);
-
-                $sugarClient->deleteStagedPackage($packageName);
-
-                $progressBar->finish();
-                $progressBar->clear();
+                $this->showTaskProgress(
+                    $output,
+                    'Deleting staged package...',
+                    function() use ($sugarClient, $packageName) {
+                        $sugarClient->deleteStagedPackage($packageName);
+                    }
+                );
             }
 
-            $progressBar->setMessage("Compressing package...");
-            $progressBar->start(1);
+            $zipFilePath = null;
+            $fileHandle = null;
 
-            $zipFilePath = tempnam(sys_get_temp_dir(), 'sugar-pack');
-            $package->compress($zipFilePath . '.zip');
-            $fileHandle = fopen($zipFilePath. '.zip', 'r');
+            $this->showTaskProgress(
+                $output,
+                'Compressing package...',
+                function()  use ($package, &$zipFilePath, &$fileHandle) {
+                    $zipFilePath = tempnam(sys_get_temp_dir(), 'sugar-pack');
+                    $package->compress($zipFilePath . '.zip');
+                    $fileHandle = fopen($zipFilePath . '.zip', 'r');
+                }
+            );
 
-            $progressBar->finish();
-            $progressBar->clear();
-
-            $progressBar->setFormat('upload');
-            $progressBar->setMessage('Uploading file...');
-
-            $progressBar->start(filesize($zipFilePath . '.zip'));
-
-            $installId = $sugarClient->uploadPackage($fileHandle, function ($dt, $db, $ut, $ub) use ($progressBar) {
-                $progressBar->setProgress($ub);
-            });
+            $installId = '';
+            $this->showTaskProgress(
+                $output,
+                'Uploading file...',
+                function(ProgressBar $progressBar) use($sugarClient, $fileHandle, &$installId) {
+                    $installId = $sugarClient->uploadPackage($fileHandle, 
+                    function ($dt, $db, $ut, $ub) use ($progressBar) {
+                        $progressBar->setProgress($ub);
+                    });
+                },
+                filesize($zipFilePath . '.zip'),
+                self::UPLOAD_FORMAT
+            );
             
             @fclose($fileHandle);
             @unlink($zipFilePath);
             @unlink($zipFilePath . '.zip');
 
-            $progressBar->finish();
-            $progressBar->clear();
-
-            $progressBar->setFormat('message');
-            $progressBar->setMessage("Installing package...");
-            $progressBar->start(1);
-
-            $sugarClient->installPackage($installId);
-
-            $progressBar->finish();
-            $progressBar->clear();
-
+            $this->showTaskProgress(
+                $output,
+                'Installing package...',
+                function() use($sugarClient, $installId) {
+                    $sugarClient->installPackage($installId);
+                }
+            );
 
             $output->writeln("<info>Package <options=bold>{$packageName} v{$packageVersion}</> installed successfully</>");
             return 0;

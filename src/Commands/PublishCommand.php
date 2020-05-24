@@ -2,7 +2,10 @@
 
 namespace SugarPack\Commands;
 
+use SugarPack\Configuration\PublishConfigurationManager;
+use SugarPack\Configuration\PublishProfile;
 use SugarPack\Http\SugarCient;
+use SugarPack\Http\SugarClientFactory;
 use SugarPack\Utils\Manifest;
 use SugarPack\Utils\Package;
 use Symfony\Component\Console\Helper\ProgressBar;
@@ -15,15 +18,6 @@ use Symfony\Component\Console\Question\ConfirmationQuestion;
 class PublishCommand extends Command
 {
     protected static $defaultName = 'publish';
-
-    private const PUBLISH_CONFIG_FILE_NAME = 'sugar_pack.publish.json';
-
-    /**
-     * The path where the package to be published is
-     *
-     * @var string
-     */
-    private $path;
 
     protected function configure()
     {
@@ -82,17 +76,16 @@ class PublishCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         try {
-            $skipUpgrade = $input->getOption('skip-upgrade');
-            $upgradeType = $input->getOption('upgrade-type');
+            $path = getcwd() . DIRECTORY_SEPARATOR . rtrim($input->getArgument('package'), DIRECTORY_SEPARATOR);
+            $package = new Package($path);
 
-            $this->path = getcwd() . DIRECTORY_SEPARATOR . rtrim($input->getArgument('package'), DIRECTORY_SEPARATOR);
-            $package = new Package($this->path);
-
-            $sugarClient = $this->buildSugarClient($input, $output);
-
+            $sugarClient = $this->buildSugarClient($path, $input, $output);
             if (is_null($sugarClient)) {
                 return 1;
             }
+
+            $skipUpgrade = $input->getOption('skip-upgrade');
+            $upgradeType = $input->getOption('upgrade-type');
 
             if (!$skipUpgrade) {
                 if (!Manifest::isValidUpgradeType($upgradeType)) {
@@ -197,94 +190,72 @@ class PublishCommand extends Command
             $output->writeln("<info>Package <options=bold>{$packageName} v{$packageVersion}</> installed successfully</>");
             return 0;
         } catch (\Exception $e) {
-            $output->writeln("<error>{$e->getMessage()}</>");
+            $output->writeln("\r<error>{$e->getMessage()}</>");
             return 1;
         }
     }
 
-    private function buildSugarClient(InputInterface $input, OutputInterface $output) : ?SugarCient
+    private function buildSugarClient(string $packagePath, InputInterface $input, OutputInterface $output) : ?SugarCient
     {
-        $profile = $input->getOption('profile');
-        [$instance, $username, $password, $platform] = $this->tryReadConfigurationFile($profile, $output);
+        $profile = $this->getPublishProfile($packagePath, $input, $output);
 
-        $this->tryToReadFromOptions($input, $output, $instance, 'instance');
-        $this->tryToReadFromOptions($input, $output, $username, 'username');
-        $this->tryToReadFromOptions($input, $output, $password, 'password');
+        $this->warnIfNullRequiredParameter('instance', $profile->instance, $output);
+        $this->warnIfNullRequiredParameter('username', $profile->username, $output);
+        $this->warnIfNullRequiredParameter('password', $profile->password, $output);
 
-        if (is_null($instance) || is_null($username) || is_null($password)) {
+        if (is_null($profile->instance) || is_null($profile->username) || is_null($profile->password)) {
             return null;
         }
 
-        return new SugarCient($instance, $username, $password, $platform);
+        return SugarClientFactory::create($profile);
     }
 
-    private function tryReadConfigurationFile(?string $profileName, OutputInterface $output): array
+    private function getPublishProfile(string $path, InputInterface $input, OutputInterface $output): PublishProfile
     {
-        $possibleConfigFilePaths = [
-            $this->path . '/' . self::PUBLISH_CONFIG_FILE_NAME,
-            $this->path . '/../' . self::PUBLISH_CONFIG_FILE_NAME
-        ];
+        $profile = null;
+        $profileName = $input->getOption('profile');
+        $configManager = new PublishConfigurationManager;
 
-        $configFilePath = null;
+        if (!$configManager->loadFromFile($path)) {
+            $output->writeln('<comment>Failed to locate a valid publish configuration file.</>');
 
-        foreach ($possibleConfigFilePaths as $possibleConfigFilePath) {
-            if (file_exists($possibleConfigFilePath)) {
-                $configFilePath = $possibleConfigFilePath;
-                break;
-            }
-        }
-        
-        if (is_null($configFilePath)) {
-            $output->writeln('<comment>Failed to locate publish configuration.</>');
-            return [null, null, null, null];
+            return $this->getPublishProfileFromOptions($input);
         }
 
-        $config = @json_decode(file_get_contents($configFilePath));
-        $profiles = $config->profiles;
-
-        if (!$profiles || !is_array($profiles) ||  empty($profiles)) {
-            $output->writeln('<comment>Couldn\'t read profiles from config file.</>');
+        if ($profileName) {
+            $profile = $configManager->getProfileByName($profileName);
         }
 
-        $publishProfile = null;
-
-        if (!is_null($profileName)) {
-            $publishProfile = $this->findProfile($profiles, $profileName);
-
-            if (is_null($publishProfile)) {
+        if (is_null($profile)) {
+            if ($profileName) {
                 $output->writeln("<comment>Couldn't find profile <options=bold>{$profileName}</>, defaulting to first item.</>");
             }
+
+            $profile = $configManager->getDefaultProfile();
         }
 
-        if (is_null($publishProfile)) {
-            $publishProfile = $profiles[0];
-        }
-
-        return [
-            isset($publishProfile->instance) ? $publishProfile->instance : null,
-            isset($publishProfile->username) ? $publishProfile->username : null,
-            isset($publishProfile->password) ? $publishProfile->password : null,
-            isset($publishProfile->platform) ? $publishProfile->platform : null
-        ];
+        return PublishConfigurationManager::mergeProfiles(
+            $profile, 
+            $this->getPublishProfileFromOptions($input)
+        );
     }
 
-    private function tryToReadFromOptions(InputInterface $input, OutputInterface $output, ?string &$value, string $optionName)
+    private function warnIfNullRequiredParameter(string $name, ?string $value, OutputInterface $output): void
     {
-        $value = $input->getOption($optionName) ?? $value;
-
-        if (is_null($value)) {
-            $output->writeln("<error>No {$optionName} was specified, either add it to the config publish file or pass it as an argument.</>");
+        if (!is_null($value) && !empty($value)) {
+            return;
         }
+
+        $output->writeln("<error>No {$name} was specified, either add it to the config publish file or pass it as an argument.</>");
     }
 
-    private function findProfile(array $profiles, string $profileName): ?\stdClass
+    private function getPublishProfileFromOptions(InputInterface $input): PublishProfile
     {
-        foreach ($profiles as $profile) {
-            if (isset($profile->name) && $profile->name == $profileName) {
-                return $profile;
-            }
-        }
+        $profile = new PublishProfile;
+        $profile->instance = $input->getOption('instance');
+        $profile->username = $input->getOption('username');
+        $profile->password = $input->getOption('password');
 
-        return null;
+        return $profile;
     }
 }

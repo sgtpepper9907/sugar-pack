@@ -24,16 +24,6 @@ use Phpfastcache\Config\Config;
 use SugarPack\Commands\PackCommand;
 use SugarPack\Commands\PublishCommand;
 use Symfony\Component\Console\Application;
-use Symfony\Component\Yaml\Yaml;
-
-try {
-    $GLOBALS['config'] = Yaml::parseFile(dirname($argv[0]) . '/config.yaml');
-} catch (\Exception $e) {
-    $GLOBALS['config'] = [
-        'output_dir' => '~/Downloads',
-        'package_naming' => 'Versioned'
-    ];
-}
 
 set_error_handler(function ($errno, $errstr, $errfile, $errline, $errcontext) {
     // error was suppressed with the @-operator

@@ -3,6 +3,7 @@
 namespace SugarPack\Commands;
 
 use Ramsey\Uuid\Uuid;
+use SugarPack\Configuration\PackConfigurationManager;
 use SugarPack\Utils\Manifest;
 use SugarPack\Utils\Package;
 use Symfony\Component\Console\Command\Command;
@@ -81,7 +82,7 @@ class PackCommand extends Command
                 $output->writeln('<error>Failed to compress the package</>');
             }
 
-            $output->writeln("<info>Successfully packaged to $outputFile</>");
+            $output->writeln("<info>Successfully packaged to <options=bold>$outputFile</>");
             return 0;
         } catch (\Exception $e) {
             $output->writeln("<error>{$e->getMessage()}</>");
@@ -97,8 +98,9 @@ class PackCommand extends Command
         $fileName = null;
         $directory = null;
         
-        $namingStrategy = $GLOBALS['config']['package_naming'];
-        $directory = $GLOBALS['config']['output_dir'];
+        $config = PackConfigurationManager::getConfigOrDefault();
+        $namingStrategy = $config['package_naming'];
+        $directory = $config['output_dir'];
 
         switch ($namingStrategy) {
             case 'GUID':

@@ -29,13 +29,5 @@
         "psr-4": {
             "SugarPack\\Tests\\": "tests/"
         }
-    },
-    "scripts": {
-        "post-package-install": [
-            "SugarPack\\ComposerScripts::createConfigFilesIfNotExists"
-        ],
-        "post-package-update": [
-            "SugarPack\\ComposerScripts::createConfigFilesIfNotExists"
-        ]
     }
 }

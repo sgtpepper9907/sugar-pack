@@ -21,6 +21,7 @@ class SugarCient
      */
     private $cache = null;
 
+    private $instance;
     private $user;
     private $password;
     private $platform;
@@ -38,6 +39,7 @@ class SugarCient
             'http_errors' => false
         ]);
 
+        $this->instance = $instance;
         $this->user = $user;
         $this->password = $password;
         $this->platform = $platform ?? 'base';
@@ -162,7 +164,7 @@ class SugarCient
 
     private function readFromCache(): ?string
     {
-        $item = $this->cache->getItem(self::TOKEN_CACHE_KEY);
+        $item = $this->cache->getItem($this->cacheKey());
 
         return $item->get();
     }
@@ -189,7 +191,7 @@ class SugarCient
 
     private function writeTokenToCache(string $token, int $ttl): void
     {
-        $item = $this->cache->getItem(self::TOKEN_CACHE_KEY)
+        $item = $this->cache->getItem($this->cacheKey())
                             ->set($token)
                             ->expiresAfter($ttl);
 
@@ -209,5 +211,10 @@ class SugarCient
                     ?? $response->getReasonPhrase();
 
         throw new \Exception("Sugar response error: {$message}");
+    }
+
+    private function cacheKey() : string
+    {
+        return self::TOKEN_CACHE_KEY . ':' . parse_url($this->instance, PHP_URL_HOST);
     }
 }

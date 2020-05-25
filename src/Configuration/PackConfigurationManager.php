@@ -28,7 +28,11 @@ class PackConfigurationManager
 
     private static function createConfigFile(): void
     {
-        mkdir(OS::getConfigDir(), 0777, true);
+        $configDir = OS::getConfigDir();
+
+        if (!is_dir($configDir)) {
+            @mkdir(OS::getConfigDir(), 0777, true);
+        }
 
         @file_put_contents(
             static::getPathToConfigFile(),

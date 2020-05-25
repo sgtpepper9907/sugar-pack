@@ -7,7 +7,7 @@ use Phpfastcache\CacheManager;
 use Psr\Http\Message\ResponseInterface;
 use stdClass;
 
-class SugarCient
+class SugarClient
 {
     /**
      * Underlying HTTP Client

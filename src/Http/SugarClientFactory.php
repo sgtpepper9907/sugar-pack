@@ -6,11 +6,13 @@ use SugarPack\Configuration\PublishProfile;
 
 class SugarClientFactory
 {
-    private function __construct(){}
-
-    public static function create(PublishProfile $publishProfile): SugarCient
+    private function __construct()
     {
-        return new SugarCient(
+    }
+
+    public static function create(PublishProfile $publishProfile): SugarClient
+    {
+        return new SugarClient(
             $publishProfile->instance,
             $publishProfile->username,
             $publishProfile->password,

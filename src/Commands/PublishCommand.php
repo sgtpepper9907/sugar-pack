@@ -4,7 +4,7 @@ namespace SugarPack\Commands;
 
 use SugarPack\Configuration\PublishConfigurationManager;
 use SugarPack\Configuration\PublishProfile;
-use SugarPack\Http\SugarCient;
+use SugarPack\Http\SugarClient;
 use SugarPack\Http\SugarClientFactory;
 use SugarPack\Utils\Manifest;
 use SugarPack\Utils\Package;
@@ -102,9 +102,9 @@ class PublishCommand extends Command
             
             $oldInstalledPackage = null;
             $this->showTaskProgress(
-                $output, 
-                'Verifying if the package is already installed...', 
-                function() use ($sugarClient, $packageName, &$oldInstalledPackage) {
+                $output,
+                'Verifying if the package is already installed...',
+                function () use ($sugarClient, $packageName, &$oldInstalledPackage) {
                     $oldInstalledPackage = $sugarClient->getInstalledPackage($packageName);
                 }
             );
@@ -128,7 +128,7 @@ class PublishCommand extends Command
                 $this->showTaskProgress(
                     $output,
                     'Uninstalling package...',
-                    function() use ($sugarClient, $packageName, $oldInstalledPackage) {
+                    function () use ($sugarClient, $packageName, $oldInstalledPackage) {
                         $sugarClient->uninstallPackageById($oldInstalledPackage->id);
                         $sugarClient->deleteStagedPackage($packageName);
                     }
@@ -142,7 +142,7 @@ class PublishCommand extends Command
                 $this->showTaskProgress(
                     $output,
                     'Deleting staged package...',
-                    function() use ($sugarClient, $packageName) {
+                    function () use ($sugarClient, $packageName) {
                         $sugarClient->deleteStagedPackage($packageName);
                     }
                 );
@@ -154,7 +154,7 @@ class PublishCommand extends Command
             $this->showTaskProgress(
                 $output,
                 'Compressing package...',
-                function()  use ($package, &$zipFilePath, &$fileHandle) {
+                function () use ($package, &$zipFilePath, &$fileHandle) {
                     $zipFilePath = tempnam(sys_get_temp_dir(), 'sugar-pack');
                     $package->compress($zipFilePath . '.zip');
                     $fileHandle = fopen($zipFilePath . '.zip', 'r');
@@ -165,11 +165,13 @@ class PublishCommand extends Command
             $this->showTaskProgress(
                 $output,
                 'Uploading file...',
-                function(ProgressBar $progressBar) use($sugarClient, $fileHandle, &$installId) {
-                    $installId = $sugarClient->uploadPackage($fileHandle, 
-                    function ($dt, $db, $ut, $ub) use ($progressBar) {
-                        $progressBar->setProgress($ub);
-                    });
+                function (ProgressBar $progressBar) use ($sugarClient, $fileHandle, &$installId) {
+                    $installId = $sugarClient->uploadPackage(
+                        $fileHandle,
+                        function ($dt, $db, $ut, $ub) use ($progressBar) {
+                            $progressBar->setProgress($ub);
+                        }
+                    );
                 },
                 filesize($zipFilePath . '.zip'),
                 self::UPLOAD_FORMAT
@@ -182,7 +184,7 @@ class PublishCommand extends Command
             $this->showTaskProgress(
                 $output,
                 'Installing package...',
-                function() use($sugarClient, $installId) {
+                function () use ($sugarClient, $installId) {
                     $sugarClient->installPackage($installId);
                 }
             );
@@ -195,7 +197,7 @@ class PublishCommand extends Command
         }
     }
 
-    private function buildSugarClient(string $packagePath, InputInterface $input, OutputInterface $output) : ?SugarCient
+    private function buildSugarClient(string $packagePath, InputInterface $input, OutputInterface $output) : ?SugarClient
     {
         $profile = $this->getPublishProfile($packagePath, $input, $output);
 
@@ -235,7 +237,7 @@ class PublishCommand extends Command
         }
 
         return PublishConfigurationManager::mergeProfiles(
-            $profile, 
+            $profile,
             $this->getPublishProfileFromOptions($input)
         );
     }

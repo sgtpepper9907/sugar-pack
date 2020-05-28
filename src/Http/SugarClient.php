@@ -27,6 +27,8 @@ class SugarClient
     private $platform;
 
     private const TOKEN_CACHE_KEY = 'sugarcrm_token';
+    private const INVALID_CACHE_KEYS_PATTERN = '/[{}\(\)\/\\@:]/';
+    private const SAFE_CACHE_KEY_CHAR = '-';
 
     public function __construct(
         string $instance,
@@ -215,6 +217,10 @@ class SugarClient
 
     private function cacheKey() : string
     {
-        return self::TOKEN_CACHE_KEY . ':' . parse_url($this->instance, PHP_URL_HOST);
+        return \preg_replace(
+            self::INVALID_CACHE_KEYS_PATTERN,
+            self::SAFE_CACHE_KEY_CHAR,
+            self::TOKEN_CACHE_KEY . '-' . parse_url($this->instance, PHP_URL_HOST)
+        );
     }
 }

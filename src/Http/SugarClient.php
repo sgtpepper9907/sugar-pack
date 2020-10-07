@@ -212,6 +212,10 @@ class SugarClient
                     ?? $jsonResponse->error_message
                     ?? $response->getReasonPhrase();
 
+        if (is_object($message)) {
+            $message = @\json_encode($message, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        }
+
         throw new \Exception("Sugar response error: {$message}");
     }
 
